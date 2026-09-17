@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INERCO PERÚ — Gestión de Incidencias 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#F0F4F8; --white:#FFFFFF; --ink:#0D1B2A; --ink2:#1B3A5C;
+  --slate:#4A5568; --silver:#718096; --mist:#A0AEC0; --border:#DDE3EC;
+  --fog:#EDF2F7; --fog2:#E2E8F0;
+  --green:#1A7F4B; --green-l:#D4EDDA; --green-d:#145F38;
+  --amber:#B7650A; --amber-l:#FEF3C7;
+  --red:#C0392B;   --red-l:#FDECEA;
+  --blue:#1A56A0;  --blue-l:#DBEAFE;
+  --teal:#0D7377;  --teal-l:#D0F0F1;
+  --r:8px; --r-sm:5px;
+  --sh:0 1px 3px rgba(13,27,42,.08),0 1px 2px rgba(13,27,42,.05);
+  --sh2:0 4px 16px rgba(13,27,42,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
+
+/* ── LAYOUT ── */
+.app{display:flex;min-height:100vh}
+.sidebar{width:220px;flex-shrink:0;background:var(--ink2);position:fixed;left:0;top:0;height:100vh;display:flex;flex-direction:column;z-index:100;box-shadow:4px 0 20px rgba(0,0,0,.2)}
+.sb-brand{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-logo{font-size:16px;font-weight:700;color:#fff;line-height:1.2}
+.sb-sub{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.8px;margin-top:3px;text-transform:uppercase}
+.sb-badge{display:inline-block;background:var(--teal);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:6px;letter-spacing:.5px}
+.sb-nav{flex:1;padding:12px 10px;overflow-y:auto}
+.sb-section{font-size:9px;font-weight:600;color:rgba(255,255,255,.25);letter-spacing:1.5px;text-transform:uppercase;padding:10px 8px 4px}
+.sb-btn{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border-radius:6px;border:none;background:transparent;cursor:pointer;font-size:12.5px;color:rgba(255,255,255,.55);text-align:left;transition:all .15s;margin-bottom:1px}
+.sb-btn:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.9)}
+.sb-btn.on{background:rgba(13,115,119,.3);color:#5CE0E6}
+.sb-btn .i{font-size:13px;width:16px;text-align:center}
+.sb-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06);font-size:9px;color:rgba(255,255,255,.2);line-height:1.7}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--sh)}
+.topbar-title{font-size:15px;font-weight:700;color:var(--ink)}
+.topbar-right{display:flex;gap:8px;align-items:center}
+.chip{font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.3px}
+.chip-ink{background:var(--ink2);color:#fff}
+.chip-g{background:var(--green-l);color:var(--green)}
+.chip-a{background:var(--amber-l);color:var(--amber)}
+.page{padding:22px 24px;flex:1}
+
+/* ── VIEWS ── */
+.view{display:none}
+.view.on{display:block;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ── PAGE HEADER ── */
+.ph{margin-bottom:20px}
+.ph h1{font-size:22px;font-weight:700;color:var(--ink);letter-spacing:-.3px}
+.ph p{font-size:12.5px;color:var(--silver);margin-top:3px}
+
+/* ── CARDS ── */
+.grid{display:grid;gap:14px;margin-bottom:16px}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:1fr 1fr}
+.g21{grid-template-columns:2fr 1fr}
+.card{background:var(--white);border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh);overflow:hidden;margin-bottom:16px}
+.card-h{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)}
+.card-h h3{font-size:13px;font-weight:700;color:var(--ink)}
+.card-h p{font-size:11px;color:var(--silver);margin-top:1px}
+.card-b{padding:16px}
+.card-b0{padding:0}
+
+/* ── STAT CARDS ── */
+.stat{background:var(--white);border-radius:var(--r);border:1px solid var(--border);padding:16px 14px 12px;position:relative;overflow:hidden;box-shadow:var(--sh);transition:transform .15s}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
+.stat::before{content:'';position:absolute;left:0;top:0;width:3px;height:100%}
+.stat.g::before{background:var(--green)}.stat.a::before{background:var(--amber)}.stat.r::before{background:var(--red)}.stat.t::before{background:var(--teal)}.stat.b::before{background:var(--blue)}
+.stat .lbl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mist);margin-bottom:6px}
+.stat .val{font-size:30px;font-weight:800;line-height:1;letter-spacing:-.5px;margin-bottom:3px}
+.stat .val.g{color:var(--green)}.stat .val.a{color:var(--amber)}.stat .val.r{color:var(--red)}.stat .val.t{color:var(--teal)}.stat .val.b{color:var(--blue)}
+.stat .meta{font-size:11px;color:var(--silver)}
+.stat .badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;margin-top:6px;letter-spacing:.3px}
+.stat .badge.g{background:var(--green-l);color:var(--green)}
+.stat .badge.a{background:var(--amber-l);color:var(--amber)}
+.stat .badge.r{background:var(--red-l);color:var(--red)}
+.stat .badge.t{background:var(--teal-l);color:var(--teal)}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{text-align:left;padding:8px 14px;background:var(--fog);color:var(--silver);font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.tbl td{padding:9px 14px;border-bottom:1px solid var(--fog2);color:var(--ink)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--fog)}
+.tbl .tc{text-align:center}.tbl .mono{font-weight:600;font-family:monospace}
+.tbl .ng{color:var(--green);font-weight:700}.tbl .na{color:var(--amber);font-weight:700}.tbl .nr{color:var(--red);font-weight:700}
+.tbl .tot td{background:var(--fog2);font-weight:700}
+
+/* ── PILL ── */
+.pill{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.3px}
+.pill .dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.pill.g{background:var(--green-l);color:var(--green)}.pill.a{background:var(--amber-l);color:var(--amber)}.pill.r{background:var(--red-l);color:var(--red)}.pill.t{background:var(--teal-l);color:var(--teal)}
+
+/* ── MONTH NAV ── */
+.month-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:18px}
+.mc{background:var(--white);border-radius:var(--r);border:1px solid var(--border);padding:10px;text-align:center;cursor:pointer;transition:all .14s}
+.mc:hover{border-color:var(--teal);transform:translateY(-2px)}
+.mc.has{border-color:var(--teal);background:var(--teal-l)}
+.mc.sel{background:var(--ink2);border-color:var(--ink2);color:#fff}
+.mc .mn{font-weight:700;font-size:12px;margin-bottom:2px}
+.mc .ms{font-size:10px;color:var(--silver)}
+.mc.sel .ms{color:rgba(255,255,255,.5)}
+.mc.has .ms{color:var(--teal)}
+
+/* ── PBAR ── */
+.pb{display:flex;align-items:center;gap:8px}
+.pb-bg{flex:1;height:6px;background:var(--fog2);border-radius:4px;overflow:hidden}
+.pb-fill{height:100%;border-radius:4px;transition:width .5s}
+
+/* ── YEAR TABLE ── */
+.ytbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.ytbl th{text-align:center;padding:7px 10px;background:var(--ink2);color:rgba(255,255,255,.75);font-size:9px;font-weight:700;letter-spacing:.5px;border:1px solid rgba(255,255,255,.1)}
+.ytbl th.l{text-align:left}
+.ytbl td{padding:7px 10px;border:1px solid var(--border);text-align:center}
+.ytbl td.l{text-align:left;font-weight:600;background:var(--fog)}
+.ytbl .vg{color:var(--green);font-weight:700}.ytbl .va{color:var(--amber);font-weight:700}
+.ytbl .tr td{background:var(--fog2);font-weight:700;font-family:monospace}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--r-sm);border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-p{background:var(--ink2);color:#fff}.btn-p:hover{background:var(--ink);transform:translateY(-1px)}
+.btn-t{background:var(--teal);color:#fff}.btn-t:hover{background:var(--teal-d,#0a5a5e);transform:translateY(-1px)}
+.btn-g{background:var(--fog2);color:var(--ink)}.btn-g:hover{background:var(--fog)}
+.btn-sm{padding:6px 13px;font-size:12px}
+
+/* ── REPORTE GERENCIAL ── */
+#ger-doc{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:40px;box-shadow:var(--sh2);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+#ger-doc h1{font-size:26px;font-weight:800;color:var(--ink);border-bottom:3px solid var(--ink2);padding-bottom:14px;margin-bottom:20px}
+#ger-doc h2{font-size:15px;font-weight:700;color:var(--ink2);margin:24px 0 10px;padding-left:10px;border-left:3px solid var(--teal)}
+#ger-doc .ger-meta{display:flex;justify-content:space-between;margin-bottom:24px;font-size:12px;color:var(--slate)}
+#ger-doc .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+#ger-doc .kpi-box{border:1px solid var(--border);border-radius:6px;padding:14px;text-align:center}
+#ger-doc .kpi-box .kv{font-size:28px;font-weight:800;line-height:1;margin:4px 0}
+#ger-doc .kpi-box .kl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--silver)}
+#ger-doc .kpi-box .km{font-size:10px;color:var(--silver);margin-top:2px}
+#ger-doc table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:20px}
+#ger-doc th{background:var(--ink2);color:rgba(255,255,255,.8);padding:7px 10px;text-align:left;font-size:9.5px;letter-spacing:.5px}
+#ger-doc th.c{text-align:center}
+#ger-doc td{padding:7px 10px;border-bottom:1px solid var(--border)}
+#ger-doc td.c{text-align:center}
+#ger-doc .g{color:var(--green);font-weight:700}
+#ger-doc .r{color:var(--red);font-weight:700}
+#ger-doc .a{color:var(--amber);font-weight:700}
+#ger-doc .tot{background:var(--fog);font-weight:700}
+#ger-doc .ger-footer{margin-top:32px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--mist);text-align:center}
+@media print{
+  .sidebar,.topbar,#ger-controls{display:none!important}
+  .main{margin-left:0}
+  #ger-doc{border:none;box-shadow:none;padding:20px}
+}
+/* ── TOAST ── */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--ink2);color:#fff;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:var(--sh2);z-index:999;transform:translateY(60px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)}
+#toast.show{transform:none;opacity:1}
+@media(max-width:1000px){.g4{grid-template-columns:repeat(2,1fr)}.month-grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+
+<div id="login-screen" style="position:fixed;inset:0;background:#0D1B2A;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:0">
+  <div style="background:#1B3A5C;border-radius:12px;padding:40px 36px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,.4);text-align:center">
+    <div style="font-size:32px;margin-bottom:8px">🔒</div>
+    <div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:4px">INERCO PERÚ</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.4);margin-bottom:28px;letter-spacing:.5px;text-transform:uppercase">Gestión de Incidencias 2026</div>
+    <input id="pwd-input" type="password" placeholder="Contraseña de acceso"
+      style="width:100%;padding:12px 16px;border-radius:8px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);color:#fff;font-size:14px;outline:none;margin-bottom:12px;text-align:center;letter-spacing:2px"
+      onkeydown="if(event.key==='Enter')checkPwd()"
+      oninput="document.getElementById('pwd-error').style.display='none'">
+    <div id="pwd-error" style="display:none;color:#FF6B6B;font-size:12px;margin-bottom:10px">Contraseña incorrecta. Intente nuevamente.</div>
+    <button onclick="checkPwd()"
+      style="width:100%;padding:12px;border-radius:8px;border:none;background:#0D7377;color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:background .2s"
+      onmouseover="this.style.background='#0a5a5e'" onmouseout="this.style.background='#0D7377'">
+      Ingresar
+    </button>
+    <div style="margin-top:20px;font-size:11px;color:rgba(255,255,255,.2)">Área de Sistemas · INERCO PERÚ</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Check if already authenticated in this session
+  if(sessionStorage.getItem('inerco_auth')==='1'){
+    document.getElementById('login-screen').style.display='none';
+    return;
+  }
+  document.getElementById('login-screen').style.display='flex';
+})();
+
+function checkPwd(){
+  // Cambia 'INERCO2026' por la contraseña que quieras
+  const PASS = 'INERCO2026';
+  const input = document.getElementById('pwd-input').value;
+  if(input === PASS){
+    sessionStorage.setItem('inerco_auth','1');
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('pwd-input').value='';
+  } else {
+    document.getElementById('pwd-error').style.display='block';
+    document.getElementById('pwd-input').value='';
+    document.getElementById('pwd-input').focus();
+    // Shake animation
+    const box = document.getElementById('login-screen').querySelector('div');
+    box.style.transform='translateX(-8px)';
+    setTimeout(()=>box.style.transform='translateX(8px)',100);
+    setTimeout(()=>box.style.transform='translateX(0)',200);
+  }
+}
+</script>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">INERCO PERÚ<br>Incidencias</div>
+    <div class="sb-sub">Sistema de Reportes</div>
+    <div class="sb-badge">2026</div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-section">Principal</div>
+    <button class="sb-btn on" id="btn-dashboard" onclick="go('dashboard',this)"><span class="i">🏠</span> Dashboard</button>
+    <button class="sb-btn" onclick="go('kpis',this)"><span class="i">🎯</span> Indicadores KPI</button>
+    <button class="sb-btn" onclick="go('resumen',this)"><span class="i">📊</span> Resumen del Mes</button>
+    <button class="sb-btn" onclick="go('anual',this)"><span class="i">📅</span> Tabla Anual</button>
+    <button class="sb-btn" onclick="go('graficos',this)"><span class="i">📈</span> Gráficos</button>
+    <div class="sb-section">Reporte</div>
+    <button class="sb-btn" onclick="go('gerencial',this)"><span class="i">📋</span> Reporte Gerencial</button>
+    <div class="sb-section">Exportar</div>
+    <button class="sb-btn" onclick="exportCSV()"><span class="i">⬇</span> Descargar CSV</button>
+    <button class="sb-btn" onclick="window.print()"><span class="i">🖨</span> Imprimir</button>
+    <div class="sb-section">Datos</div>
+    <button class="sb-btn" onclick="go('cargar',this)"><span class="i">📂</span> Cargar PDFs</button>
+  </div>
+  <div class="sb-foot">INERCO PERÚ · Sistemas<br>Enero – Julio 2026</div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="tt">Resumen del Mes</div>
+    <div class="topbar-right">
+      <span class="chip chip-ink">Ene–Jun 2026</span>
+      <span class="chip chip-g" id="chip-mes"></span>
+    </div>
+  </div>
+  <div class="page">
+
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <div id="v-dashboard" class="view on">
+      <div class="ph"><h1>Dashboard Ejecutivo</h1><p>Visión general · Enero – Julio 2026 · INERCO PERÚ</p></div>
+
+      <!-- KPI Summary Row -->
+      <div class="grid g4" id="dash-kpis" style="margin-bottom:16px"></div>
+
+      <!-- Charts Row -->
+      <div class="grid g21" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-h"><div><h3>Incidencias por Mes</h3><p>Desglose por nivel de atención</p></div>
+          <span class="pill t" id="dash-sla-pill"><span class="dot"></span>—</span></div>
+          <div class="card-b"><div style="height:220px"><canvas id="dash-nivel"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Estado de KPIs</h3></div>
+          <div class="card-b" style="display:flex;flex-direction:column;align-items:center;padding-top:10px">
+            <div style="height:160px;width:160px"><canvas id="dash-donut"></canvas></div>
+            <div style="margin-top:14px;width:100%;display:flex;flex-direction:column;gap:6px" id="dash-legend"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Semáforo tabla resumen -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-h"><h3>Resumen de Indicadores — Todos los Meses</h3></div>
+        <div class="card-b0"><table class="tbl" id="dash-tabla"></table></div>
+      </div>
+
+      <!-- Category + Trend row -->
+      <div class="grid g2">
+        <div class="card">
+          <div class="card-h"><h3>Top Categorías (Acumulado)</h3></div>
+          <div class="card-b"><div style="height:200px"><canvas id="dash-cat"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Tendencia de Incidencias</h3></div>
+          <div class="card-b"><div style="height:200px"><canvas id="dash-trend"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ KPIs ═══ -->
+    <div id="v-kpis" class="view">
+      <div class="ph"><h1>Indicadores KPI</h1><p>Seguimiento de metas según Plan de Trabajo 2026</p></div>
+      <div id="kpi-cards"></div>
+    </div>
+
+    <!-- ═══ RESUMEN ═══ -->
+    <div id="v-resumen" class="view on">
+      <div class="ph"><h1 id="res-title">Resumen del Mes</h1><p>Selecciona un mes para ver el detalle</p></div>
+      <div class="month-grid" id="month-nav-r"></div>
+      <div class="grid g3" id="res-kpis1" style="margin-bottom:10px"></div>
+      <div class="grid g3" id="res-kpis2" style="margin-bottom:16px"></div>
+      <div class="grid g2">
+        <div class="card">
+          <div class="card-h"><div><h3>Por Nivel (SLA)</h3><p>Totales y resueltas</p></div><span class="pill t" id="sla-pill"><span class="dot"></span>—</span></div>
+          <div class="card-b0"><table class="tbl" id="t-nivel"></table></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Por Categoría</h3></div>
+          <div class="card-b0"><table class="tbl" id="t-cat"></table></div>
+        </div>
+      </div>
+      <div class="card" id="ign-card" style="display:none">
+        <div class="card-h"><h3>Registros Ignorados</h3></div>
+        <div class="card-b" id="ign-body"></div>
+      </div>
+    </div>
+
+    <!-- ═══ ANUAL ═══ -->
+    <div id="v-anual" class="view">
+      <div class="ph"><h1>Tabla Anual 2026</h1><p>Acumulado por mes · mismo formato que CUMPLIMIENTO_2026.xlsx</p></div>
+      <div class="month-grid" id="month-nav-a"></div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-h"><h3>POR NIVEL</h3><span class="pill t"><span class="dot"></span>Acumulado</span></div>
+        <div class="card-b" style="overflow-x:auto"><table class="ytbl" id="yt-nivel"></table></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>POR CATEGORÍA</h3></div>
+        <div class="card-b" style="overflow-x:auto"><table class="ytbl" id="yt-cat"></table></div>
+      </div>
+    </div>
+
+    <!-- ═══ GRÁFICOS ═══ -->
+    <div id="v-graficos" class="view">
+      <div class="ph"><h1>Gráficos</h1><p>Evolución mensual · Ene–Jun 2026</p></div>
+      <div class="grid g2">
+        <div class="card"><div class="card-h"><h3>Incidencias por Nivel y Mes</h3></div><div class="card-b"><div style="height:220px"><canvas id="ch-nivel"></canvas></div></div></div>
+        <div class="card"><div class="card-h"><h3>Tendencia Total</h3></div><div class="card-b"><div style="height:220px"><canvas id="ch-trend"></canvas></div></div></div>
+      </div>
+      <div class="grid g2">
+        <div class="card"><div class="card-h"><h3>Categorías Más Frecuentes (Acumulado)</h3></div><div class="card-b"><div style="height:220px"><canvas id="ch-cat"></canvas></div></div></div>
+        <div class="card"><div class="card-h"><h3>Indicadores P27 y P28 vs Meta</h3></div><div class="card-b"><div style="height:220px"><canvas id="ch-kpi"></canvas></div></div></div>
+      </div>
+    </div>
+
+    <!-- ═══ REPORTE GERENCIAL ═══ -->
+    <div id="v-gerencial" class="view">
+      <div class="ph"><h1>Reporte Gerencial</h1><p>Resumen ejecutivo para presentación a Gerencia de Administración y Finanzas</p></div>
+      <div id="ger-controls" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px;padding:16px;background:var(--white);border-radius:var(--r);border:1px solid var(--border)">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--slate)">Período</label>
+          <select id="ger-per" onchange="renderGer()" style="padding:7px 11px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:13px;outline:none">
+            <option value="all">Todos los meses (Ene–Jun)</option>
+            <option value="q1">Q1 — Enero a Marzo</option>
+            <option value="q2">Q2 — Abril a Junio</option>
+            <option value="0">Solo Enero</option>
+            <option value="1">Solo Febrero</option>
+            <option value="2">Solo Marzo</option>
+            <option value="3">Solo Abril</option>
+            <option value="4">Solo Mayo</option>
+            <option value="5">Solo Junio</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--slate)">Preparado por</label>
+          <input id="ger-autor" value="Víctor Ñique" onchange="renderGer()" style="padding:7px 11px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:13px;outline:none;width:180px">
+        </div>
+        <button class="btn btn-p" onclick="printGer()">🖨 Imprimir / PDF</button>
+        <button class="btn btn-g btn-sm" onclick="renderGer()">↻ Actualizar</button>
+      </div>
+      <div id="ger-doc"></div>
+    </div>
+
+
+    <!-- ═══ CARGAR PDFs ═══ -->
+    <div id="v-cargar" class="view">
+      <div class="ph"><h1>Cargar PDFs del Mes</h1><p>Sube los dos archivos de un mes y se procesarán automáticamente. Los datos se agregan al reporte sin modificar el archivo HTML.</p></div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-h"><h3>Configuración</h3></div>
+        <div class="card-b" style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--slate)">Mes</label>
+            <select id="up-mes" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:13px;outline:none">
+              <option value="0">Enero</option><option value="1">Febrero</option>
+              <option value="2">Marzo</option><option value="3">Abril</option>
+              <option value="4">Mayo</option><option value="5">Junio</option>
+              <option value="6">Julio</option><option value="7">Agosto</option>
+              <option value="8">Septiembre</option><option value="9">Octubre</option>
+              <option value="10">Noviembre</option><option value="11">Diciembre</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div>
+          <div id="zone-n" onclick="document.getElementById('fn').click()" 
+            ondragover="event.preventDefault();this.style.borderColor='var(--teal)';this.style.background='var(--teal-l)'"
+            ondragleave="this.style.borderColor='var(--border)';this.style.background='var(--white)'"
+            ondrop="dropFile(event,'n')"
+            style="border:2px dashed var(--border);border-radius:var(--r);padding:36px 20px;text-align:center;cursor:pointer;background:var(--white);transition:all .2s">
+            <div id="icon-n" style="font-size:40px;margin-bottom:10px;opacity:.4">📄</div>
+            <div style="font-size:16px;font-weight:700;color:var(--slate);margin-bottom:4px">Solicitudes_por_nivel</div>
+            <div id="sub-n" style="font-size:12px;color:var(--silver)">Arrastra o haz clic · Tier 1, 2, 3</div>
+          </div>
+          <input type="file" id="fn" accept=".pdf" style="display:none" onchange="pickFile(this,'n')">
+        </div>
+        <div>
+          <div id="zone-c" onclick="document.getElementById('fc').click()"
+            ondragover="event.preventDefault();this.style.borderColor='var(--teal)';this.style.background='var(--teal-l)'"
+            ondragleave="this.style.borderColor='var(--border)';this.style.background='var(--white)'"
+            ondrop="dropFile(event,'c')"
+            style="border:2px dashed var(--border);border-radius:var(--r);padding:36px 20px;text-align:center;cursor:pointer;background:var(--white);transition:all .2s">
+            <div id="icon-c" style="font-size:40px;margin-bottom:10px;opacity:.4">📋</div>
+            <div style="font-size:16px;font-weight:700;color:var(--slate);margin-bottom:4px">Solicitudes_por_categorías</div>
+            <div id="sub-c" style="font-size:12px;color:var(--silver)">Arrastra o haz clic · Categorías</div>
+          </div>
+          <input type="file" id="fc" accept=".pdf" style="display:none" onchange="pickFile(this,'c')">
+        </div>
+      </div>
+
+      <div id="proc-bar" style="display:none;height:3px;background:linear-gradient(90deg,var(--teal),var(--blue),var(--teal));background-size:200%;animation:shimmer 1.5s infinite;border-radius:3px;margin-bottom:12px"></div>
+      <style>@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}</style>
+
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button class="btn btn-p" id="btn-proc" onclick="processFiles()" disabled>✦ Procesar y agregar al reporte</button>
+        <button class="btn btn-g" onclick="resetUpload()">↺ Limpiar</button>
+      </div>
+
+      <div id="proc-result" style="margin-top:16px"></div>
+
+      <div class="card" style="margin-top:20px;border:1px dashed var(--border)">
+        <div class="card-b" style="font-size:12px;color:var(--slate);line-height:1.8">
+          <strong>Nota:</strong> Los datos procesados se guardan en esta sesión del navegador.<br>
+          Para que sean permanentes, descarga el CSV o imprime el reporte después de cargar.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+<div id="toast">✓ <span id="toast-msg"></span></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  DATOS — todos los meses embebidos directamente
+// ═══════════════════════════════════════════════════
+const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MS     = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const NIVELES = ['Nivel 1 (24 horas)','Nivel 2 (72 horas)','Nivel 3 (sin límite - según disponibilidad)'];
+
+const DB = {
+  "0": {
+    nombre:"Enero", total_registros:7, total_valid:6, total_cerradas:6, total_no_resueltas:0,
+    niveles:[
+      {label:"Nivel 1 (24 horas)",     total:1, resueltas:1, no_res:0},
+      {label:"Nivel 2 (72 horas)",     total:0, resueltas:0, no_res:0},
+      {label:"Nivel 3 (sin límite)",   total:5, resueltas:5, no_res:0}
+    ],
+    categorias:{"General":1,"Software":3,"User Administration":2},
+    ignorados:[{id:"1848",sol:"Elisabeth Rios Cueto",motivo:"Bajas Perú — no es soporte técnico"}]
+  },
+  "1": {
+    nombre:"Febrero", total_registros:27, total_valid:24, total_cerradas:24, total_no_resueltas:0,
+    niveles:[
+      {label:"Nivel 1 (24 horas)",     total:10, resueltas:10, no_res:0},
+      {label:"Nivel 2 (72 horas)",     total:3,  resueltas:3,  no_res:0},
+      {label:"Nivel 3 (sin límite)",   total:11, resueltas:11, no_res:0}
+    ],
+    categorias:{"Software":9,"Desktop Hardware":5,"General":3,"Telephone":3,"Services":2,"User Administration":2,"Operating System":1},
+    ignorados:[
+      {id:"1871",sol:"Incidencias España",motivo:"Plan de acogida"},
+      {id:"1858",sol:"Incidencias España",motivo:"Plan de acogida"}
+    ]
+  },
+  "2": {
+    nombre:"Marzo", total_registros:33, total_valid:28, total_cerradas:28, total_no_resueltas:0,
+    niveles:[
+      {label:"Nivel 1 (24 horas)",     total:4,  resueltas:4,  no_res:0},
+      {label:"Nivel 2 (72 horas)",     total:6,  resueltas:6,  no_res:0},
+      {label:"Nivel 3 (sin límite)",   total:18, resueltas:18, no_res:0}
+    ],
+    categorias:{"Software":22,"User Administration":3,"Desktop Hardware":2,"Telephone":1,"Services":1},
+    ignorados:[
+      {id:"1885",sol:"Elisabeth Rios Cueto",motivo:"Plan de acogida"},
+      {id:"1906",sol:"Incidencias España",  motivo:"Plan de acogida"},
+      {id:"1900",sol:"Incidencias España",  motivo:"No asignado — sin fecha fin"},
+      {id:"1884",sol:"Incidencias España",  motivo:"Plan de acogida"},
+      {id:"1891",sol:"Incidencias España",  motivo:"Plan de acogida"}
+    ]
+  },
+  "3": {
+    nombre:"Abril", total_registros:14, total_valid:12, total_cerradas:12, total_no_resueltas:0,
+    niveles:[
+      {label:"Nivel 1 (24 horas)",     total:3, resueltas:3, no_res:0},
+      {label:"Nivel 2 (72 horas)",     total:6, resueltas:6, no_res:0},
+      {label:"Nivel 3 (sin límite)",   total:3, resueltas:3, no_res:0}
+    ],
+    categorias:{"Software":7,"Desktop Hardware":4,"User Administration":1},
+    ignorados:[
+      {id:"1912",sol:"Incidencias España",motivo:"No asignado (sección)"},
+      {id:"1910",sol:"Outlook",          motivo:"Resumen diario — sistema/bot"}
+    ]
+  },
+  "4": {
+    nombre:"Mayo", total_registros:4, total_valid:4, total_cerradas:4, total_no_resueltas:0,
+    niveles:[
+      {label:"Nivel 1 (24 horas)",     total:1, resueltas:1, no_res:0},
+      {label:"Nivel 2 (72 horas)",     total:1, resueltas:1, no_res:0},
+      {label:"Nivel 3 (sin límite)",   total:2, resueltas:2, no_res:0}
+    ],
+    categorias:{"General":1,"Software":1,"Telephone":1,"User Administration":1},
+    ignorados:[]
+  },
+  "5": {
+    nombre:"Junio", total_registros:7, total_valid:7, total_cerradas:7, total_no_resueltas:0,
+    niveles:[
+      {label:"Nivel 1 (24 horas)",     total:0, resueltas:0, no_res:0},
+      {label:"Nivel 2 (72 horas)",     total:0, resueltas:0, no_res:0},
+      {label:"Nivel 3 (sin límite)",   total:7, resueltas:7, no_res:0}
+    ],
+    categorias:{"Software":3,"User Administration":4},
+    ignorados:[]
+  }
+  ,"6": {
+    nombre:"Julio", total_registros:21, total_valid:20, total_cerradas:20, total_no_resueltas:0,
+    niveles:[
+      {label:"Nivel 1 (24 horas)",    total:10, resueltas:10, no_res:0},
+      {label:"Nivel 2 (72 horas)",    total:6,  resueltas:6,  no_res:0},
+      {label:"Nivel 3 (sin límite)",  total:4,  resueltas:4,  no_res:0}
+    ],
+    categorias:{"Software":13,"Desktop Hardware":3,"General":2,"User Administration":2},
+    ignorados:[
+      {id:"1982",sol:"Outlook",motivo:"Resumen diario — sistema/bot"}
+    ]
+  }
+};
+
+// ═══════════════════════════════════════════════════
+//  ESTADO
+// ═══════════════════════════════════════════════════
+let currentMonth = 5; // Junio por defecto (último)
+
+// ═══════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════
+function toast(m){
+  const t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=m;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+const TITLES = {dashboard:'Dashboard Ejecutivo',cargar:'Cargar PDFs del Mes',kpis:'Indicadores KPI',resumen:'Resumen del Mes',anual:'Tabla Anual',graficos:'Gráficos',gerencial:'Reporte Gerencial'};
+function go(id,el){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('v-'+id).classList.add('on');
+  if(el) el.classList.add('on');
+  document.getElementById('tt').textContent=TITLES[id]||id;
+  if(id==='dashboard')  renderDashboard();
+  if(id==='cargar')    renderCargar();
+  if(id==='kpis')      renderKPIs();
+  if(id==='resumen')   { buildMonthNav('month-nav-r',true); renderResumen(); }
+  if(id==='anual')     { buildMonthNav('month-nav-a',false); renderAnual(); }
+  if(id==='graficos')  renderGraficos();
+  if(id==='gerencial') renderGer();
+}
+
+// ═══════════════════════════════════════════════════
+//  MONTH NAV
+// ═══════════════════════════════════════════════════
+function buildMonthNav(elId, withSel){
+  document.getElementById(elId).innerHTML = Object.keys(DB).map(i=>{
+    const d=DB[i];
+    const sel = withSel && parseInt(i)===currentMonth ? 'sel' : '';
+    return `<div class="mc has ${sel}" onclick="${withSel?`selMes(${i})`:`viewMes(${i})`}">
+      <div class="mn">${d.nombre}</div>
+      <div class="ms">${d.total_valid} inc.</div>
+    </div>`;
+  }).join('');
+}
+
+function selMes(mi){
+  currentMonth=parseInt(mi);
+  buildMonthNav('month-nav-r',true);
+  renderResumen();
+}
+
+function viewMes(mi){
+  currentMonth=parseInt(mi);
+  go('resumen',document.querySelectorAll('.sb-btn')[0]);
+}
+
+// ═══════════════════════════════════════════════════
+//  RESUMEN DEL MES
+// ═══════════════════════════════════════════════════
+function renderResumen(){
+  const d = DB[String(currentMonth)];
+  if(!d) return;
+
+  document.getElementById('res-title').textContent = 'Resumen — '+d.nombre+' 2026';
+  document.getElementById('chip-mes').textContent  = d.nombre+' 2026';
+  document.getElementById('chip-mes').style.display = 'block';
+
+  const tT  = d.total_valid;
+  const tR  = d.total_cerradas;
+  const tNR = d.total_no_resueltas;
+  const n1  = d.niveles[0];
+  const n2  = d.niveles[1];
+  const n3  = d.niveles[2];
+  const s1  = n1.total>0 ? Math.round(n1.resueltas/n1.total*100) : null;
+  const s2  = n2.total>0 ? Math.round(n2.resueltas/n2.total*100) : null;
+  const s3  = n3.total>0 ? Math.round(n3.resueltas/n3.total*100) : null;
+
+  // Fila 1: totales
+  document.getElementById('res-kpis1').innerHTML = [
+    {l:'TOTAL INCIDENCIAS', v:tT,  c:'t', m:d.total_registros+' en reporte · '+d.ignorados.length+' ignoradas'},
+    {l:'RESUELTAS',         v:tR,  c:'g', m:'Con fecha de finalización'},
+    {l:'NO RESUELTAS',      v:tNR, c:tNR===0?'g':'r', m:'Sin fecha de finalización'},
+  ].map(k=>`<div class="stat ${k.c}">
+    <div class="lbl">${k.l}</div>
+    <div class="val ${k.c}">${k.v}</div>
+    <div class="meta">${k.m}</div>
+    <div class="badge ${k.c}">●</div>
+  </div>`).join('');
+
+  // Fila 2: por nivel
+  document.getElementById('res-kpis2').innerHTML = [
+    {l:'NIVEL 1 — ≤ 24h',      v:s1!==null?s1+'%':'—', c:s1===null?'t':s1>=95?'g':'r', m:n1.resueltas+'/'+n1.total+(s1===null?' · Sin incidencias':' resueltas en rango')},
+    {l:'NIVEL 2 — ≤ 72h',      v:s2!==null?s2+'%':'—', c:s2===null?'t':s2>=95?'g':'r', m:n2.resueltas+'/'+n2.total+(s2===null?' · Sin incidencias':' resueltas en rango')},
+    {l:'NIVEL 3 — Sin límite',  v:s3!==null?s3+'%':'—', c:s3===null?'t':s3>=95?'g':'a', m:n3.resueltas+'/'+n3.total+(s3===null?' · Sin incidencias':' resueltas')},
+  ].map(k=>`<div class="stat ${k.c}">
+    <div class="lbl">${k.l}</div>
+    <div class="val ${k.c}" style="font-size:24px">${k.v}</div>
+    <div class="meta">${k.m}</div>
+  </div>`).join('');
+
+  // SLA pill
+  document.getElementById('sla-pill').className='pill '+(tNR===0?'g':'r');
+  document.getElementById('sla-pill').innerHTML=`<span class="dot"></span>${tR}/${tT} resueltas`;
+
+  // Nivel table
+  document.getElementById('t-nivel').innerHTML=`
+    <thead><tr><th>NIVEL</th><th class="tc">TOTAL</th><th class="tc">RESUELTAS</th><th class="tc">NO RESUELTAS</th></tr></thead>
+    <tbody>${d.niveles.map(n=>`<tr>
+      <td>${n.label}</td>
+      <td class="tc mono">${n.total}</td>
+      <td class="tc ng">${n.resueltas}</td>
+      <td class="tc ${n.no_res>0?'nr':'ng'}">${n.no_res}</td>
+    </tr>`).join('')}
+    <tr class="tot"><td>TOTAL</td><td class="tc">${tT}</td><td class="tc ng">${tR}</td><td class="tc ${tNR>0?'nr':'ng'}">${tNR}</td></tr>
+    </tbody>`;
+
+  // Category table
+  const cats=Object.entries(d.categorias).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('t-cat').innerHTML=`
+    <thead><tr><th>CATEGORÍA</th><th class="tc">N°</th><th>%</th></tr></thead>
+    <tbody>${cats.map(([c,n])=>{
+      const pct=tT>0?Math.round(n/tT*100):0;
+      return `<tr><td>${c}</td><td class="tc ng">${n}</td>
+        <td><div class="pb"><div class="pb-bg"><div class="pb-fill" style="width:${pct}%;background:var(--teal)"></div></div>
+        <span style="font-size:10px;color:var(--silver);width:28px">${pct}%</span></div></td></tr>`;
+    }).join('')}</tbody>`;
+
+  // Ignorados
+  const igns=d.ignorados;
+  if(igns.length){
+    document.getElementById('ign-card').style.display='block';
+    document.getElementById('ign-body').innerHTML=igns.map(ig=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--fog2);font-size:12.5px">
+        <span style="font-size:16px">🚫</span>
+        <strong>#${ig.id}</strong>
+        <span style="color:var(--slate)">${ig.sol}</span>
+        <span style="margin-left:auto;color:var(--red);font-size:11px">${ig.motivo}</span>
+      </div>`).join('');
+  } else {
+    document.getElementById('ign-card').style.display='none';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  TABLA ANUAL
+// ═══════════════════════════════════════════════════
+function renderAnual(){
+  const keys = Object.keys(DB).sort((a,b)=>a-b);
+  const mwd  = keys.map(k=>({i:parseInt(k),d:DB[k]}));
+
+  // Nivel table
+  const mhdr = `<tr><th class="l">NIVEL</th>${mwd.map(x=>`<th>${x.d.nombre.slice(0,3)}</th>`).join('')}<th>TOTAL</th></tr>`;
+  let nb = '';
+  [0,1,2].forEach(ni=>{
+    const tots = mwd.map(x=>`<td>${x.d.niveles[ni].total}</td>`).join('');
+    const ress = mwd.map(x=>`<td class="vg">${x.d.niveles[ni].resueltas}</td>`).join('');
+    const tt   = mwd.reduce((a,x)=>a+x.d.niveles[ni].total,0);
+    const tr   = mwd.reduce((a,x)=>a+x.d.niveles[ni].resueltas,0);
+    nb += `<tr><td class="l" rowspan="2" style="border-bottom:2px solid var(--border)">${DB['0'].niveles[ni].label}</td>${tots}<td class="vg">${tt}</td></tr>`;
+    nb += `<tr style="background:var(--green-l);opacity:.9">${ress}<td class="vg">${tr}</td></tr>`;
+  });
+  // No resueltas row
+  const nrRow = mwd.map(x=>`<td class="${x.d.total_no_resueltas>0?'va':''}">${x.d.total_no_resueltas||'—'}</td>`).join('');
+  const gnr   = mwd.reduce((a,x)=>a+x.d.total_no_resueltas,0);
+  nb += `<tr class="tr"><td class="l">Incidencias No Resueltas</td>${nrRow}<td class="${gnr>0?'va':''}">${gnr||'—'}</td></tr>`;
+  document.getElementById('yt-nivel').innerHTML=`<thead>${mhdr}</thead><tbody>${nb}</tbody>`;
+
+  // Category table
+  const allCats = new Set();
+  mwd.forEach(x=>Object.keys(x.d.categorias).forEach(c=>allCats.add(c)));
+  const cl = [...allCats].sort();
+  const ch = `<tr><th class="l">CATEGORÍA</th>${mwd.map(x=>`<th>${x.d.nombre.slice(0,3)}</th>`).join('')}<th>TOTAL</th></tr>`;
+  let cb = `<tr class="tr"><td class="l">N° Incidencias</td>${mwd.map(x=>`<td class="vg">${x.d.total_valid}</td>`).join('')}<td>${mwd.reduce((a,x)=>a+x.d.total_valid,0)}</td></tr>`;
+  cl.forEach(c=>{
+    const cells = mwd.map(x=>`<td>${(x.d.categorias[c]||0)||'—'}</td>`).join('');
+    const tot   = mwd.reduce((a,x)=>a+(x.d.categorias[c]||0),0);
+    cb += `<tr><td class="l">${c}</td>${cells}<td class="vg">${tot}</td></tr>`;
+  });
+  document.getElementById('yt-cat').innerHTML=`<thead>${ch}</thead><tbody>${cb}</tbody>`;
+
+  // Month nav
+  document.getElementById('month-nav-a').innerHTML=Object.keys(DB).map(i=>`
+    <div class="mc has" onclick="viewMes(${i})">
+      <div class="mn">${DB[i].nombre}</div>
+      <div class="ms">${DB[i].total_valid} inc.</div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════
+//  GRÁFICOS
+// ═══════════════════════════════════════════════════
+Chart.defaults.font.family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+const CI={};
+function mk(id,cfg){if(CI[id])CI[id].destroy();const c=document.getElementById(id);if(c)CI[id]=new Chart(c,cfg);}
+const CL={g:'#1A7F4B',a:'#B7650A',r:'#C0392B',t:'#0D7377',b:'#1A56A0',lg:'#A0AEC0'};
+
+function renderGraficos(){
+  const keys=Object.keys(DB).sort((a,b)=>a-b);
+  const mwd=keys.map(k=>({i:k,d:DB[k]}));
+  const lbs=mwd.map(x=>x.d.nombre.slice(0,3));
+
+  mk('ch-nivel',{type:'bar',data:{labels:lbs,datasets:[
+    {label:'Nivel 1',data:mwd.map(x=>x.d.niveles[0].total),backgroundColor:'rgba(13,115,119,.8)',borderRadius:4},
+    {label:'Nivel 2',data:mwd.map(x=>x.d.niveles[1].total),backgroundColor:'rgba(26,86,160,.7)',borderRadius:0},
+    {label:'Nivel 3',data:mwd.map(x=>x.d.niveles[2].total),backgroundColor:'rgba(183,101,10,.7)',borderRadius:4},
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},
+    scales:{x:{stacked:true,grid:{display:false},border:{display:false}},
+            y:{stacked:true,grid:{color:'#EDF2F7'},border:{display:false}}}}});
+
+  mk('ch-trend',{type:'line',data:{labels:lbs,datasets:[{
+    label:'Total incidencias',data:mwd.map(x=>x.d.total_valid),
+    borderColor:CL.t,backgroundColor:'rgba(13,115,119,.08)',fill:true,
+    tension:.4,pointBackgroundColor:CL.t,pointRadius:5,borderWidth:2.5
+  }]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{grid:{display:false},border:{display:false}},
+            y:{grid:{color:'#EDF2F7'},border:{display:false},min:0}}}});
+
+  const ca={};
+  mwd.forEach(x=>Object.entries(x.d.categorias).forEach(([c,v])=>ca[c]=(ca[c]||0)+v));
+  const ce=Object.entries(ca).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  mk('ch-cat',{type:'bar',data:{labels:ce.map(e=>e[0]),datasets:[{
+    label:'Incidencias',data:ce.map(e=>e[1]),
+    backgroundColor:[CL.t,CL.b,CL.g,CL.a,CL.r,CL.lg,'#553C9A','#2B6CB0'],borderRadius:5
+  }]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{grid:{color:'#EDF2F7'},border:{display:false}},
+            y:{grid:{display:false},border:{display:false},ticks:{font:{size:11}}}}}});
+
+  const p27=mwd.map(x=>{const n=x.d.niveles[0];return n.total>0?Math.round(n.resueltas/n.total*100):null;});
+  const p28=mwd.map(x=>x.d.total_valid>0?Math.round(x.d.total_cerradas/x.d.total_valid*100):null);
+  mk('ch-kpi',{type:'line',data:{labels:lbs,datasets:[
+    {label:'P27 — Nivel 1 (≤24h)',data:p27,borderColor:CL.g,tension:.4,pointRadius:5,borderWidth:2.5,fill:false,spanGaps:true},
+    {label:'P28 — SLA Global',    data:p28,borderColor:CL.b,tension:.4,pointRadius:5,borderWidth:2.5,fill:false,spanGaps:true},
+    {label:'Meta 95%',            data:mwd.map(()=>95),borderColor:CL.r,borderDash:[5,4],pointRadius:0,borderWidth:1.5,fill:false},
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},
+    scales:{x:{grid:{display:false},border:{display:false}},
+            y:{grid:{color:'#EDF2F7'},border:{display:false},min:80,max:105,ticks:{callback:v=>v+'%'}}}}});
+}
+
+// ═══════════════════════════════════════════════════
+//  REPORTE GERENCIAL
+// ═══════════════════════════════════════════════════
+function getMeses(per){
+  const all = Object.keys(DB).sort((a,b)=>a-b).map(k=>({i:k,d:DB[k]}));
+  if(per==='all') return all;
+  if(per==='q1')  return all.filter(x=>parseInt(x.i)<3);
+  if(per==='q2')  return all.filter(x=>parseInt(x.i)>=3);
+  return all.filter(x=>x.i===per);
+}
+
+function renderGer(){
+  const per   = document.getElementById('ger-per').value;
+  const autor = document.getElementById('ger-autor').value || 'Víctor Ñique';
+  const mwd   = getMeses(per);
+
+  if(!mwd.length){
+    document.getElementById('ger-doc').innerHTML='<p style="color:var(--silver);padding:20px">Sin datos para el período seleccionado.</p>';
+    return;
+  }
+
+  const totT  = mwd.reduce((a,x)=>a+x.d.total_valid,0);
+  const totR  = mwd.reduce((a,x)=>a+x.d.total_cerradas,0);
+  const totNR = mwd.reduce((a,x)=>a+x.d.total_no_resueltas,0);
+  const totIg = mwd.reduce((a,x)=>a+x.d.ignorados.length,0);
+
+  const n1t=mwd.reduce((a,x)=>a+x.d.niveles[0].total,0);
+  const n1r=mwd.reduce((a,x)=>a+x.d.niveles[0].resueltas,0);
+  const n2t=mwd.reduce((a,x)=>a+x.d.niveles[1].total,0);
+  const n2r=mwd.reduce((a,x)=>a+x.d.niveles[1].resueltas,0);
+  const n3t=mwd.reduce((a,x)=>a+x.d.niveles[2].total,0);
+  const n3r=mwd.reduce((a,x)=>a+x.d.niveles[2].resueltas,0);
+
+  const p27 = n1t>0 ? Math.round(n1r/n1t*100) : 100;
+  const p28 = totT>0 ? Math.round(totR/totT*100) : 100;
+
+  const catAgg={};
+  mwd.forEach(x=>Object.entries(x.d.categorias).forEach(([c,v])=>catAgg[c]=(catAgg[c]||0)+v));
+  const catRows=Object.entries(catAgg).sort((a,b)=>b[1]-a[1]);
+
+  const perLabel = {
+    all:`Enero – ${mwd[mwd.length-1].d.nombre} 2026`,
+    q1:'Primer Trimestre (Enero – Marzo 2026)',
+    q2:'Segundo Trimestre (Abril – Junio 2026)',
+  }[per] || `${mwd[0].d.nombre} 2026`;
+
+  const today = new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});
+
+  const pSLA = (p,meta=95) => `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;background:${p>=meta?'#D4EDDA':'#FDECEA'};color:${p>=meta?'#1A7F4B':'#C0392B'}">${p}%</span>`;
+  const clr  = (p,meta=95) => p>=meta ? '#1A7F4B' : '#C0392B';
+
+  document.getElementById('ger-doc').innerHTML = `
+    <!-- ENCABEZADO -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:3px solid #1B3A5C;margin-bottom:24px">
+      <div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#A0AEC0;margin-bottom:6px;text-transform:uppercase">Reporte de Gestión · Área de Sistemas</div>
+        <h1 style="font-size:24px;font-weight:800;color:#0D1B2A;margin-bottom:4px">INERCO PERÚ</h1>
+        <div style="font-size:14px;color:#4A5568">${perLabel}</div>
+      </div>
+      <div style="text-align:right;font-size:11px;color:#718096">
+        <div style="font-weight:600;color:#0D1B2A;margin-bottom:4px">Víctor Ñique · Área de Sistemas</div>
+        <div>Preparado por: ${autor}</div>
+        <div>Fecha: ${today}</div>
+        <div style="margin-top:8px">${pSLA(p28,85)} Cumplimiento general (P28)</div>
+      </div>
+    </div>
+
+    <!-- KPIs EJECUTIVOS -->
+    <h2>Indicadores Clave</h2>
+    <div class="kpi-row">
+      <div class="kpi-box">
+        <div class="kl">Total Incidencias</div>
+        <div class="kv" style="color:#0D7377">${totT}</div>
+        <div class="km">${mwd.length} mes(es) · ${totIg} ignoradas</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kl">Resueltas</div>
+        <div class="kv g">${totR}</div>
+        <div class="km">Con fecha de finalización</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kl">No Resueltas</div>
+        <div class="kv" style="color:${totNR===0?'#1A7F4B':'#C0392B'}">${totNR}</div>
+        <div class="km">Sin fecha de finalización</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kl">P28 — SLA Global</div>
+        <div class="kv" style="color:${clr(p28,85)}">${p28}%</div>
+        <div class="km">Meta ≥ 85%</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kl">P27 — Nivel 1 (≤24h)</div>
+        <div class="kv" style="color:${clr(p27)}">${p27}%</div>
+        <div class="km">${n1r}/${n1t} en SLA · Meta ≥ 95%</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kl">Nivel 2 (≤72h)</div>
+        <div class="kv" style="color:${n2t>0?clr(Math.round(n2r/n2t*100)):'#0D7377'}">${n2t>0?Math.round(n2r/n2t*100)+'%':'—'}</div>
+        <div class="km">${n2r}/${n2t}</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kl">Nivel 3 (Sin límite)</div>
+        <div class="kv" style="color:${n3t>0?'#1A7F4B':'#0D7377'}">${n3t>0?Math.round(n3r/n3t*100)+'%':'—'}</div>
+        <div class="km">${n3r}/${n3t} resueltas</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kl">Meses reportados</div>
+        <div class="kv" style="color:#1A56A0">${mwd.length}</div>
+        <div class="km">${mwd.map(x=>x.d.nombre.slice(0,3)).join(', ')}</div>
+      </div>
+    </div>
+
+    <!-- CUMPLIMIENTO POR NIVEL -->
+    <h2>Cumplimiento por Nivel de Atención</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>NIVEL</th>
+          ${mwd.map(x=>`<th class="c">${x.d.nombre.slice(0,3)}</th>`).join('')}
+          <th class="c">TOTAL</th><th class="c">RESUELTAS</th><th class="c">SLA</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${[0,1,2].map(ni=>{
+          const lbl=['Nivel 1 (≤24h)','Nivel 2 (≤72h)','Nivel 3 (Sin límite)'][ni];
+          const tot=mwd.reduce((a,x)=>a+x.d.niveles[ni].total,0);
+          const res=mwd.reduce((a,x)=>a+x.d.niveles[ni].resueltas,0);
+          const pct=tot>0?Math.round(res/tot*100):null;
+          const meta=ni===0?95:ni===1?95:null;
+          return `<tr>
+            <td><strong>${lbl}</strong></td>
+            ${mwd.map(x=>`<td class="c">${x.d.niveles[ni].total||'—'}</td>`).join('')}
+            <td class="c"><strong>${tot}</strong></td>
+            <td class="c g">${res}</td>
+            <td class="c">${pct!==null?pSLA(pct,meta||95):'—'}</td>
+          </tr>`;
+        }).join('')}
+        <tr class="tot">
+          <td>TOTAL</td>
+          ${mwd.map(x=>`<td class="c">${x.d.total_valid}</td>`).join('')}
+          <td class="c">${totT}</td>
+          <td class="c g">${totR}</td>
+          <td class="c">${pSLA(p28,85)}</td>
+        </tr>
+        <tr>
+          <td style="color:#C0392B;font-weight:600">No Resueltas</td>
+          ${mwd.map(x=>`<td class="c ${x.d.total_no_resueltas>0?'r':''}">${x.d.total_no_resueltas||'—'}</td>`).join('')}
+          <td class="c ${totNR>0?'r':''}">${totNR||'—'}</td>
+          <td class="c" colspan="2" style="color:#A0AEC0;font-size:11px">Sin fecha de finalización</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- POR CATEGORÍA -->
+    <h2>Distribución por Categoría</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>CATEGORÍA</th>
+          ${mwd.map(x=>`<th class="c">${x.d.nombre.slice(0,3)}</th>`).join('')}
+          <th class="c">TOTAL</th><th class="c">%</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="tot">
+          <td>N° Incidencias</td>
+          ${mwd.map(x=>`<td class="c g">${x.d.total_valid}</td>`).join('')}
+          <td class="c g">${totT}</td><td class="c">100%</td>
+        </tr>
+        ${catRows.map(([c,tot])=>`<tr>
+          <td>${c}</td>
+          ${mwd.map(x=>`<td class="c">${(x.d.categorias[c]||0)||'—'}</td>`).join('')}
+          <td class="c"><strong>${tot}</strong></td>
+          <td class="c" style="color:#0D7377;font-weight:600">${totT>0?Math.round(tot/totT*100):0}%</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+
+    <!-- REGISTROS EXCLUIDOS -->
+    <h2>Registros Excluidos del Reporte</h2>
+    <p style="font-size:12px;color:#718096;margin-bottom:12px">Solicitudes no contabilizadas por no corresponder a incidencias válidas de INERCO PERÚ.</p>
+    <table>
+      <thead><tr><th>MES</th><th>ID</th><th>SOLICITANTE</th><th>MOTIVO</th></tr></thead>
+      <tbody>
+        ${mwd.flatMap(x=>x.d.ignorados.map(ig=>`<tr>
+          <td>${x.d.nombre}</td>
+          <td style="font-family:monospace">#${ig.id}</td>
+          <td>${ig.sol}</td>
+          <td style="color:#C0392B;font-size:11px">${ig.motivo}</td>
+        </tr>`)).join('') || '<tr><td colspan="4" style="color:#A0AEC0;text-align:center;padding:16px">Sin registros excluidos</td></tr>'}
+      </tbody>
+    </table>
+
+    <!-- FOOTER -->
+    <div class="ger-footer">
+      INERCO PERÚ · Área de Sistemas · ${perLabel} · Preparado por ${autor} · ${today}
+    </div>`;
+}
+
+function printGer(){
+  const w=window.open('','_blank');
+  const doc=document.getElementById('ger-doc').innerHTML;
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>Reporte Gerencial INERCO PERÚ</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#0D1B2A;font-size:12px;padding:30px;line-height:1.5}
+      h1{font-size:22px;font-weight:800;margin-bottom:4px}
+      h2{font-size:14px;font-weight:700;color:#1B3A5C;margin:20px 0 8px;padding-left:8px;border-left:3px solid #0D7377}
+      table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:11px}
+      th{background:#1B3A5C;color:rgba(255,255,255,.85);padding:6px 10px;text-align:left;font-size:9px;letter-spacing:.5px;text-transform:uppercase}
+      th.c{text-align:center}
+      td{padding:6px 10px;border-bottom:1px solid #DDE3EC}
+      td.c{text-align:center}
+      .g{color:#1A7F4B;font-weight:700}.r{color:#C0392B;font-weight:700}.a{color:#B7650A;font-weight:700}
+      .tot td{background:#EDF2F7;font-weight:700}
+      .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+      .kpi-box{border:1px solid #DDE3EC;border-radius:6px;padding:12px;text-align:center}
+      .kv{font-size:24px;font-weight:800;line-height:1;margin:3px 0}
+      .kl{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#A0AEC0}
+      .km{font-size:9px;color:#718096;margin-top:2px}
+      .ger-footer{margin-top:28px;padding-top:12px;border-top:1px solid #DDE3EC;font-size:9px;color:#A0AEC0;text-align:center}
+      @media print{@page{margin:15mm}}
+    </style></head><body>${doc}</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),600);
+}
+
+
+// ═══════════════════════════════════════════════════
+//  KPI DEFINITIONS (Plan de Trabajo 2026)
+// ═══════════════════════════════════════════════════
+const KPI_DEFS = [
+  {
+    id:'sla',
+    nombre:'Cumplimiento de SLA de soporte (P28)',
+    descripcion:'Porcentaje de incidencias resueltas sobre el total de incidencias válidas del período.',
+    meta: 85, unidad:'%', signo:'≥', frecuencia:'Mensual',
+    calc: (d) => d.total_valid>0 ? Math.round(d.total_cerradas/d.total_valid*100) : 100
+  },
+  {
+    id:'p27',
+    nombre:'Tiempo de respuesta a incidencias Nivel 1 (P27)',
+    descripcion:'Porcentaje de incidencias Nivel 1 (Tier 1) atendidas. Meta: ≥ 85% mensual. Si no hay incidencias Nivel 1 en el mes, el indicador no aplica.',
+    meta: 85, unidad:'%', signo:'≥', frecuencia:'Mensual',
+    calc: (d) => {const n=d.niveles[0]; return n.total>0?Math.round(n.resueltas/n.total*100):null;}
+  },
+  {
+    id:'nores',
+    nombre:'Incidencias No Resueltas',
+    descripcion:'Número de incidencias sin fecha de finalización al cierre del mes.',
+    meta: 0, unidad:'', signo:'=', frecuencia:'Mensual',
+    calc: (d) => d.total_no_resueltas,
+    lowerBetter: true
+  },
+  {
+    id:'niv2',
+    nombre:'Cumplimiento SLA Nivel 2 (≤ 72h)',
+    descripcion:'Porcentaje de incidencias Tier 2 resueltas dentro de las 72 horas establecidas.',
+    meta: 95, unidad:'%', signo:'≥', frecuencia:'Mensual',
+    calc: (d) => {const n=d.niveles[1]; return n.total>0?Math.round(n.resueltas/n.total*100):null;}
+  },
+];
+
+function kpiStatus(val, kpi){
+  if(val===null) return 'na';
+  if(kpi.lowerBetter) return val<=kpi.meta?'g':'r';
+  if(val>=kpi.meta) return 'g';
+  if(val>=kpi.meta*0.9) return 'a';
+  return 'r';
+}
+
+function kpiLabel(st){ return {g:'En Meta',a:'En Riesgo',r:'Fuera de Meta',na:'Sin datos'}[st]; }
+function kpiColor(st){ return {g:'var(--green)',a:'var(--amber)',r:'var(--red)',na:'var(--silver)'}[st]; }
+function kpiBg(st){    return {g:'var(--green-l)',a:'var(--amber-l)',r:'var(--red-l)',na:'var(--fog)'}[st]; }
+
+// ═══════════════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════════════
+function renderDashboard(){
+  const keys = Object.keys(DB).sort((a,b)=>a-b);
+  const mwd  = keys.map(k=>({i:k,d:DB[k]}));
+
+  const totT  = mwd.reduce((a,x)=>a+x.d.total_valid,0);
+  const totR  = mwd.reduce((a,x)=>a+x.d.total_cerradas,0);
+  const totNR = mwd.reduce((a,x)=>a+x.d.total_no_resueltas,0);
+  const n1t   = mwd.reduce((a,x)=>a+x.d.niveles[0].total,0);
+  const n1r   = mwd.reduce((a,x)=>a+x.d.niveles[0].resueltas,0);
+  const p27   = n1t>0?Math.round(n1r/n1t*100):100;
+  const p28   = totT>0?Math.round(totR/totT*100):100;
+  const statusP28 = p28>=85?'g':p28>=75?'a':'r';
+  const statusP27 = p27>=85?'g':p27>=70?'a':'r';
+
+  // KPI tiles
+  document.getElementById('dash-kpis').innerHTML = [
+    {l:'TOTAL INCIDENCIAS',   v:totT,   c:'t',             m:'Ene–Jul 2026',            badge:''},
+    {l:'RESUELTAS',           v:totR,   c:'g',             m:'Con fecha de finalización', badge:'g'},
+    {l:'NO RESUELTAS',        v:totNR,  c:totNR===0?'g':'r',m:'Sin fecha fin',           badge:totNR===0?'g':'r'},
+    {l:'SLA GLOBAL — P28',    v:p28+'%',c:statusP28,       m:'Cumpl. SLA soporte ≥ 85% · Mensual', badge:statusP28},
+    {l:'P27 — NIVEL 1 ≤24h', v:n1t>0?p27+'%':'—',c:n1t>0?statusP27:'t', m:'Meta ≥ 85% · Mensual', badge:n1t>0?statusP27:''},
+    {l:'MESES CARGADOS',      v:mwd.length, c:'b',         m:'de 12 meses del año',     badge:''},
+    {l:'IGNORADAS',           v:mwd.reduce((a,x)=>a+x.d.ignorados.length,0), c:'t', m:'España, Outlook, etc.', badge:''},
+    {l:'PROMEDIO MENSUAL',    v:Math.round(totT/mwd.length), c:'t', m:'incidencias por mes', badge:''},
+  ].map(k=>`<div class="stat ${k.c}">
+    <div class="lbl">${k.l}</div>
+    <div class="val ${k.c}" style="font-size:${String(k.v).length>5?'20px':'28px'}">${k.v}</div>
+    <div class="meta">${k.m}</div>
+    ${k.badge?`<div class="badge ${k.badge}">${kpiLabel(k.badge)}</div>`:''}
+  </div>`).join('');
+
+  // SLA pill
+  document.getElementById('dash-sla-pill').className='pill '+statusP28;
+  document.getElementById('dash-sla-pill').innerHTML=`<span class="dot"></span>P28: ${p28}%`;
+
+  // Stacked bar
+  mk('dash-nivel',{type:'bar',data:{labels:mwd.map(x=>x.d.nombre.slice(0,3)),datasets:[
+    {label:'Nivel 1',data:mwd.map(x=>x.d.niveles[0].total),backgroundColor:'rgba(13,115,119,.85)',borderRadius:3},
+    {label:'Nivel 2',data:mwd.map(x=>x.d.niveles[1].total),backgroundColor:'rgba(26,86,160,.75)',borderRadius:0},
+    {label:'Nivel 3',data:mwd.map(x=>x.d.niveles[2].total),backgroundColor:'rgba(183,101,10,.75)',borderRadius:3},
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},
+    scales:{x:{stacked:true,grid:{display:false},border:{display:false}},
+            y:{stacked:true,grid:{color:'#EDF2F7'},border:{display:false}}}}});
+
+  // Donut KPI status
+  const kpiResults = KPI_DEFS.map(kpi=>{
+    let vals = mwd.map(x=>kpi.calc(x.d)).filter(v=>v!==null);
+    if(!vals.length) return 'na';
+    const avg = Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+    return kpiStatus(avg,kpi);
+  });
+  const g=kpiResults.filter(s=>s==='g').length;
+  const a=kpiResults.filter(s=>s==='a').length;
+  const r=kpiResults.filter(s=>s==='r').length;
+
+  mk('dash-donut',{type:'doughnut',data:{labels:['En Meta','En Riesgo','Fuera de Meta'],
+    datasets:[{data:[g||0.01,a||0.01,r||0.01],backgroundColor:['#1A7F4B','#B7650A','#C0392B'],borderWidth:0,hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false}}}});
+
+  document.getElementById('dash-legend').innerHTML=[
+    {c:CL.g,l:'En Meta',n:g},{c:CL.a,l:'En Riesgo',n:a},{c:CL.r,l:'Fuera de Meta',n:r}
+  ].map(x=>`<div style="display:flex;align-items:center;gap:8px;font-size:12px">
+    <div style="width:10px;height:10px;border-radius:50%;background:${x.c};flex-shrink:0"></div>
+    <span>${x.l}</span><span style="margin-left:auto;font-weight:700">${x.n}</span>
+  </div>`).join('');
+
+  // Summary table
+  document.getElementById('dash-tabla').innerHTML=`
+    <thead><tr>
+      <th>MES</th><th class="tc">TOTAL</th><th class="tc">RESUELTAS</th><th class="tc">NO RES.</th>
+      <th class="tc">SLA P28</th><th class="tc">P27 N.1</th><th class="tc">IGNORADAS</th>
+    </tr></thead>
+    <tbody>${mwd.map(x=>{
+      const d=x.d;
+      const p8=d.total_valid>0?Math.round(d.total_cerradas/d.total_valid*100):100;
+      const n1=d.niveles[0]; const p7=n1.total>0?Math.round(n1.resueltas/n1.total*100):null;
+      const sp8=p8>=85?'ng':'na'; const sp7=p7===null?'':p7>=85?'ng':'na';
+      return `<tr>
+        <td><strong>${d.nombre}</strong></td>
+        <td class="tc mono">${d.total_valid}</td>
+        <td class="tc ng">${d.total_cerradas}</td>
+        <td class="tc ${d.total_no_resueltas>0?'nr':'ng'}">${d.total_no_resueltas}</td>
+        <td class="tc ${sp8}">
+          <span class="pill ${p8>=85?'g':'r'}" style="font-size:9px"><span class="dot"></span>${p8}%</span>
+        </td>
+        <td class="tc ${sp7}">
+          ${p7!==null?`<span class="pill ${p7>=85?'g':'r'}" style="font-size:9px"><span class="dot"></span>${p7}%</span>`:'<span style="color:var(--silver)">—</span>'}
+        </td>
+        <td class="tc" style="color:var(--silver)">${d.ignorados.length}</td>
+      </tr>`;
+    }).join('')}
+    <tr class="tot">
+      <td>TOTAL</td><td class="tc">${totT}</td><td class="tc ng">${totR}</td>
+      <td class="tc ${totNR>0?'nr':'ng'}">${totNR}</td>
+      <td class="tc"><span class="pill ${statusP28}" style="font-size:9px"><span class="dot"></span>${p28}%</span></td>
+      <td class="tc"><span class="pill ${statusP27}" style="font-size:9px"><span class="dot"></span>${p27}%</span></td>
+      <td class="tc" style="color:var(--silver)">${mwd.reduce((a,x)=>a+x.d.ignorados.length,0)}</td>
+    </tr>
+    </tbody>`;
+
+  // Category bar
+  const ca={};
+  mwd.forEach(x=>Object.entries(x.d.categorias).forEach(([c,v])=>ca[c]=(ca[c]||0)+v));
+  const ce=Object.entries(ca).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  mk('dash-cat',{type:'bar',data:{labels:ce.map(e=>e[0]),datasets:[{
+    label:'Incidencias',data:ce.map(e=>e[1]),
+    backgroundColor:['#0D7377','#1A56A0','#1A7F4B','#B7650A','#C0392B','#A0AEC0','#553C9A'],borderRadius:5
+  }]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{grid:{color:'#EDF2F7'},border:{display:false}},
+            y:{grid:{display:false},border:{display:false},ticks:{font:{size:11}}}}}});
+
+  // Trend
+  mk('dash-trend',{type:'line',data:{labels:mwd.map(x=>x.d.nombre.slice(0,3)),datasets:[{
+    label:'Total',data:mwd.map(x=>x.d.total_valid),
+    borderColor:'#0D7377',backgroundColor:'rgba(13,115,119,.1)',fill:true,
+    tension:.4,pointBackgroundColor:'#0D7377',pointRadius:5,borderWidth:2.5
+  },{
+    label:'Resueltas',data:mwd.map(x=>x.d.total_cerradas),
+    borderColor:'#1A7F4B',backgroundColor:'transparent',
+    tension:.4,pointBackgroundColor:'#1A7F4B',pointRadius:4,borderWidth:2,borderDash:[4,3]
+  }]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},
+    scales:{x:{grid:{display:false},border:{display:false}},
+            y:{grid:{color:'#EDF2F7'},border:{display:false},min:0}}}});
+}
+
+// ═══════════════════════════════════════════════════
+//  INDICADORES KPI
+// ═══════════════════════════════════════════════════
+function renderKPIs(){
+  const keys = Object.keys(DB).sort((a,b)=>a-b);
+  const mwd  = keys.map(k=>({i:k,d:DB[k]}));
+
+  document.getElementById('kpi-cards').innerHTML = KPI_DEFS.map(kpi=>{
+    const vals = mwd.map(x=>({mes:x.d.nombre, val:kpi.calc(x.d)}));
+    const valid = vals.filter(v=>v.val!==null);
+    const avg   = valid.length ? Math.round(valid.reduce((a,b)=>a+b.val,0)/valid.length) : null;
+    const st    = avg!==null ? kpiStatus(avg,kpi) : 'na';
+    const stLbl = kpiLabel(st);
+    const stClr = kpiColor(st);
+    const stBg  = kpiBg(st);
+
+    // Monthly breakdown
+    const monthRows = vals.map(v=>{
+      const s = v.val!==null ? kpiStatus(v.val,kpi) : 'na';
+      const pct = kpi.meta>0 && v.val!==null ? Math.min(100,Math.round(v.val/kpi.meta*100)) : (v.val===0?100:0);
+      return `<tr>
+        <td>${v.mes}</td>
+        <td class="tc">
+          ${v.val!==null
+            ? `<span style="font-weight:700;color:${kpiColor(s)}">${v.val}${kpi.unidad}</span>`
+            : '<span style="color:var(--silver)">—</span>'}
+        </td>
+        <td>
+          ${v.val!==null ? `
+          <div class="pb">
+            <div class="pb-bg">
+              <div class="pb-fill" style="width:${pct}%;background:${kpiColor(s)}"></div>
+            </div>
+            <span style="font-size:10px;color:var(--silver);width:34px">${pct}%</span>
+          </div>` : ''}
+        </td>
+        <td class="tc">
+          ${v.val!==null ? `<span class="pill ${s}" style="font-size:9px"><span class="dot"></span>${kpiLabel(s)}</span>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="card" style="margin-bottom:18px">
+      <div class="card-h" style="background:${stBg};border-bottom-color:${stClr}30">
+        <div>
+          <h3 style="color:var(--ink)">${kpi.nombre}</h3>
+          <p>${kpi.descripcion}</p>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span class="pill ${st}"><span class="dot"></span>${stLbl}</span>
+          <span style="font-family:monospace;font-size:9px;color:var(--silver)">${kpi.signo} ${kpi.meta}${kpi.unidad} · ${kpi.frecuencia}</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:180px 1fr;gap:0">
+        <!-- Stat grande -->
+        <div style="padding:20px;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--silver);margin-bottom:6px">PROMEDIO</div>
+          <div style="font-size:44px;font-weight:800;color:${stClr};line-height:1;letter-spacing:-1px">
+            ${avg!==null?avg+kpi.unidad:'—'}
+          </div>
+          <div style="font-size:11px;color:var(--silver);margin-top:6px">Meta: ${kpi.signo} ${kpi.meta}${kpi.unidad}</div>
+          <div style="margin-top:12px;width:100%">
+            ${avg!==null && kpi.meta>0 ? `
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--silver);margin-bottom:3px">
+              <span>0${kpi.unidad}</span><span>Meta ${kpi.meta}${kpi.unidad}</span>
+            </div>
+            <div class="pb-bg" style="height:8px">
+              <div class="pb-fill" style="width:${Math.min(100,kpi.lowerBetter?Math.max(0,100-avg*20):Math.round(avg/kpi.meta*100))}%;background:${stClr};height:100%"></div>
+            </div>` : ''}
+          </div>
+        </div>
+        <!-- Tabla mensual -->
+        <div class="card-b0">
+          <table class="tbl">
+            <thead><tr><th>MES</th><th class="tc">RESULTADO</th><th>PROGRESO</th><th class="tc">ESTADO</th></tr></thead>
+            <tbody>${monthRows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+
+// ═══════════════════════════════════════════════════
+//  CARGAR PDFs (procesamiento en navegador)
+// ═══════════════════════════════════════════════════
+let uploadFiles = {n: null, c: null};
+
+function renderCargar(){
+  // Set default month to next available
+  const avail = Object.keys(DB).map(Number);
+  const next = Math.max(...avail) + 1;
+  const sel = document.getElementById('up-mes');
+  if(sel && next <= 11) sel.value = next;
+}
+
+function dropFile(e, t){
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if(f && f.name.endsWith('.pdf')){ uploadFiles[t]=f; markUploadZone(t,f.name); }
+  checkFiles();
+}
+
+function pickFile(inp, t){
+  const f = inp.files[0];
+  if(f){ uploadFiles[t]=f; markUploadZone(t,f.name); checkFiles(); }
+}
+
+function markUploadZone(t, name){
+  const zone = document.getElementById('zone-'+t);
+  zone.style.borderColor = 'var(--green)';
+  zone.style.borderStyle = 'solid';
+  zone.style.background  = 'var(--green-l)';
+  document.getElementById('icon-'+t).textContent = '✅';
+  document.getElementById('sub-'+t).textContent  = name;
+}
+
+function checkFiles(){
+  document.getElementById('btn-proc').disabled = !(uploadFiles.n && uploadFiles.c);
+}
+
+function resetUpload(){
+  uploadFiles = {n:null, c:null};
+  ['n','c'].forEach(t=>{
+    document.getElementById('fn').value='';
+    document.getElementById('fc').value='';
+    const zone = document.getElementById('zone-'+t);
+    zone.style.borderColor = 'var(--border)';
+    zone.style.borderStyle = 'dashed';
+    zone.style.background  = 'var(--white)';
+    document.getElementById('icon-'+t).textContent = t==='n'?'📄':'📋';
+    document.getElementById('sub-'+t).textContent  = t==='n'?'Arrastra o haz clic · Tier 1, 2, 3':'Arrastra o haz clic · Categorías';
+  });
+  document.getElementById('btn-proc').disabled = true;
+  document.getElementById('proc-result').innerHTML = '';
+}
+
+async function processFiles(){
+  const mi  = parseInt(document.getElementById('up-mes').value);
+  const bar = document.getElementById('proc-bar');
+  bar.style.display = 'block';
+  document.getElementById('btn-proc').disabled = true;
+  document.getElementById('proc-result').innerHTML = '<p style="color:var(--slate);font-size:13px">⏳ Leyendo archivos...</p>';
+
+  try {
+    // Read both PDFs as text using PDF.js via CDN
+    const [nivelText, catText] = await Promise.all([
+      readPDFText(uploadFiles.n),
+      readPDFText(uploadFiles.c)
+    ]);
+
+    // Parse the texts
+    const result = parsePDFs(nivelText, catText, mi);
+    
+    // Add to DB
+    DB[String(mi)] = result;
+    
+    bar.style.display = 'none';
+    document.getElementById('btn-proc').disabled = false;
+
+    const mes = MONTHS[mi];
+    document.getElementById('proc-result').innerHTML = `
+      <div style="background:var(--green-l);border:1px solid var(--green);border-radius:var(--r);padding:16px;margin-top:4px">
+        <div style="font-weight:700;color:var(--green);margin-bottom:8px">✓ ${mes} procesado correctamente</div>
+        <div style="font-size:12.5px;color:var(--green-d,#145F38);line-height:1.8">
+          Total válidas: <strong>${result.total_valid}</strong> ·
+          Resueltas: <strong>${result.total_cerradas}</strong> ·
+          No resueltas: <strong>${result.total_no_resueltas}</strong> ·
+          Ignoradas: <strong>${result.ignorados.length}</strong>
+        </div>
+        <div style="font-size:11.5px;color:var(--green-d,#145F38);margin-top:6px">
+          Nivel 1: ${result.niveles[0].total} · Nivel 2: ${result.niveles[1].total} · Nivel 3: ${result.niveles[2].total}
+        </div>
+        ${result.ignorados.length ? `<div style="margin-top:8px;font-size:11.5px;color:var(--slate)">
+          Ignorados: ${result.ignorados.map(ig=>`#${ig.id} ${ig.sol}`).join(', ')}
+        </div>` : ''}
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btn-g btn-sm" onclick="go('dashboard',document.querySelectorAll('.sb-btn')[0])">Ver Dashboard</button>
+          <button class="btn btn-g btn-sm" onclick="go('resumen',document.querySelectorAll('.sb-btn')[2])">Ver Resumen</button>
+        </div>
+      </div>`;
+
+    toast('✓ '+mes+' agregado al reporte');
+    resetUpload();
+
+  } catch(err) {
+    bar.style.display = 'none';
+    document.getElementById('btn-proc').disabled = false;
+    document.getElementById('proc-result').innerHTML = `
+      <div style="background:var(--red-l);border:1px solid var(--red);border-radius:var(--r);padding:14px">
+        <strong style="color:var(--red)">Error al procesar</strong><br>
+        <span style="font-size:12px;color:var(--slate)">${err.message}</span>
+      </div>`;
+  }
+}
+
+// ── PDF Reader using PDF.js CDN ──────────────────────────
+async function readPDFText(file){
+  // Load PDF.js dynamically if not loaded
+  if(!window.pdfjsLib){
+    await new Promise((res,rej)=>{
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload=()=>{
+        pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        res();
+      };
+      s.onerror=rej;
+      document.head.appendChild(s);
+    });
+  }
+  const buf  = await file.arrayBuffer();
+  const pdf  = await pdfjsLib.getDocument({data:buf}).promise;
+  let text   = '';
+  for(let p=1; p<=pdf.numPages; p++){
+    const page    = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    // Sort items by Y (top to bottom) then X (left to right)
+    const items = content.items.map(i=>({
+      str:i.str, x:Math.round(i.transform[4]), y:Math.round(i.transform[5])
+    }));
+    const byY = {};
+    items.forEach(i=>{
+      const k = Math.round(i.y/4)*4;
+      if(!byY[k]) byY[k]=[];
+      byY[k].push(i);
+    });
+    Object.keys(byY).sort((a,b)=>b-a).forEach(y=>{
+      text += byY[y].sort((a,b)=>a.x-b.x).map(i=>i.str).join(' ') + '\n';
+    });
+  }
+  return text;
+}
+
+// ── PDF Parser (inline, no server needed) ───────────────
+const IGNORE_KW = ['plan de acogida','resumen diario','fwd: ##','outlook resumen'];
+const TIER_PAT  = /^(No asignado|Tier\s+[1-4])$/i;
+
+function parsePDFs(nivelText, catText, monthIdx){
+  const lines = nivelText.split('\n').map(l=>l.trim()).filter(Boolean);
+  
+  let currentTier = null;
+  const incidencias = [], ignorados = [];
+  let totalReg = 0;
+
+  // Extract total
+  const tm = nivelText.match(/Registros totales\s*:\s*(\d+)/);
+  if(tm) totalReg = parseInt(tm[1]);
+
+  const idPat = /^(\d{4,5})\s+(.*)/;
+  const SKIP  = new Set(['RequestID Solicitante','Asunto','Categoría','Hora de creación Hora de',
+    'finalización','Tiempo','transcurrido','Prom.','Recuento','Hora de creación',
+    'Informe de los resúmenes','INERCO PERU','Solicitudes por nivel']);
+
+  let i=0;
+  while(i<lines.length){
+    const line = lines[i];
+    if(SKIP.has(line)||line.match(/^Generado por|^Hora de creaci|^Registros totales/)){i++;continue;}
+    
+    // Tier header
+    if(TIER_PAT.test(line) && (lines[i-1]===undefined || !lines[i-1].match(/^\d{4,5}/))){
+      currentTier = line.trim(); i++; continue;
+    }
+    if(line==='Prom.' || line.match(/^\d{1,4}:\d{2}:\d{2}$/) || line.match(/^\d+$/)){i++;continue;}
+
+    const m = idPat.exec(line);
+    if(m){
+      const id   = m[1];
+      const rest = m[2];
+      // Collect next few lines as context
+      const ctx  = lines.slice(i,i+5).join(' ');
+      
+      // Check fin date: if "No asignado" appears in context where fin date should be
+      const finNoAsig = ctx.includes('No asignado') && currentTier && currentTier.toLowerCase().includes('asignado');
+      const isNoAsig  = currentTier && currentTier.toLowerCase().includes('asignado');
+      
+      // Extract solicitante
+      let sol = rest.replace(/\s*-?\s*INERCO\s*/i,'').split(/\s+(?:Software|General|Hardware|Network|Desktop|Telephone|User|Services|Operating)/)[0].trim();
+      
+      // Check exclusions
+      const ctxLow = ctx.toLowerCase();
+      const isIgnore = isNoAsig ||
+        IGNORE_KW.some(kw=>ctxLow.includes(kw)) ||
+        (sol.toLowerCase().includes('outlook') && ctxLow.includes('resumen'));
+
+      // Find time
+      const times = ctx.match(/\d{1,4}:\d{2}:\d{2}/g)||[];
+      const timeStr = times[times.length-1]||null;
+      const parts = timeStr ? timeStr.split(':').map(Number) : [0,0,0];
+      const hrs = parts[0]+parts[1]/60+parts[2]/3600;
+
+      // Resuelta = has fin date (not "No asignado" as fin)
+      const hasFinDate = ctx.match(/\d{2}-\d{2}-\d{4}/g)||[];
+      const resuelta = !isNoAsig && hasFinDate.length>=2;
+
+      const tier = currentTier||'Tier 3';
+      const rec  = {id, sol:sol.slice(0,40), tier, resuelta, ignorado:isIgnore, motivo: isIgnore ? (isNoAsig?'No asignado':'Sistema/bot'):''};
+
+      if(isIgnore) ignorados.push({id, sol:sol.slice(0,30), motivo:rec.motivo});
+      else         incidencias.push(rec);
+      i++;
+      continue;
+    }
+    i++;
+  }
+
+  // Group by tier
+  const t1 = incidencias.filter(x=>x.tier==='Tier 1');
+  const t2 = incidencias.filter(x=>x.tier==='Tier 2');
+  const t3 = incidencias.filter(x=>x.tier==='Tier 3');
+
+  // Parse categories from catText using Recuento method
+  const cats = {};
+  const catLines = catText.split('\n').map(l=>l.trim()).filter(Boolean);
+  const CAT_NAMES = new Set(['General','Software','Network','Desktop Hardware','Telephone',
+    'User Administration','Impresora','Internet','Administración','Servicio',
+    'Services','Operating System','Red','Hardware','Telefonía','No asignado']);
+  let curCat = null;
+  let pastSummary = false;
+  for(let ci=0; ci<catLines.length; ci++){
+    const cl = catLines[ci];
+    if(cl==='Informe de los resúmenes') { pastSummary=true; continue; }
+    if(CAT_NAMES.has(cl)) { curCat=cl; continue; }
+    if(cl==='Recuento' && curCat && curCat!=='No asignado' && !pastSummary){
+      const num = parseInt(catLines[ci+1]);
+      if(!isNaN(num)) cats[curCat]=(cats[curCat]||0)+num;
+    }
+  }
+  // Remove No asignado
+  delete cats['No asignado'];
+
+  const totalV  = incidencias.length;
+  const totalR  = incidencias.filter(x=>x.resuelta).length;
+
+  return {
+    nombre: MONTHS[monthIdx],
+    total_registros: totalReg,
+    total_valid: totalV,
+    total_cerradas: totalR,
+    total_no_resueltas: totalV-totalR,
+    niveles:[
+      {label:"Nivel 1 (24 horas)",   total:t1.length, resueltas:t1.filter(x=>x.resuelta).length, no_res:t1.filter(x=>!x.resuelta).length},
+      {label:"Nivel 2 (72 horas)",   total:t2.length, resueltas:t2.filter(x=>x.resuelta).length, no_res:t2.filter(x=>!x.resuelta).length},
+      {label:"Nivel 3 (sin límite)", total:t3.length, resueltas:t3.filter(x=>x.resuelta).length, no_res:t3.filter(x=>!x.resuelta).length},
+    ],
+    categorias: cats,
+    ignorados
+  };
+}
+
+// ═══════════════════════════════════════════════════
+//  EXPORTAR CSV
+// ═══════════════════════════════════════════════════
+function exportCSV(){
+  const keys=Object.keys(DB).sort((a,b)=>a-b);
+  let csv=`CUMPLIMIENTO 2026\n\nPOR NIVEL\n`;
+  keys.forEach(k=>{
+    const d=DB[k];
+    csv+=`\n${d.nombre.toUpperCase()}\tN° incidencias totales\tN° de incidencias resueltas\tIncidencias No Resueltas\n`;
+    d.niveles.forEach(n=>csv+=`${n.label}\t${n.total}\t${n.resueltas}\t${n.no_res}\n`);
+    csv+=`\t${d.total_valid}\t${d.total_cerradas}\t${d.total_no_resueltas}\n`;
+  });
+  const allCats=new Set();
+  keys.forEach(k=>Object.keys(DB[k].categorias).forEach(c=>allCats.add(c)));
+  const cl=[...allCats].sort();
+  csv+=`\nPOR CATEGORIA\nMES\tN° Incidencias\t${cl.join('\t')}\n`;
+  keys.forEach(k=>{
+    const d=DB[k];
+    csv+=`${d.nombre.toUpperCase()}\t${d.total_valid}\t${cl.map(c=>d.categorias[c]||0).join('\t')}\n`;
+  });
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='CUMPLIMIENTO_2026.csv';a.click();
+  toast('✓ CSV descargado');
+}
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+buildMonthNav('month-nav-r',true);
+renderDashboard();
+</script>
+</body>
+</html>
